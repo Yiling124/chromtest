@@ -1,0 +1,13 @@
+ body {
+   min-width: 300px;
+   padding: 3px;
+   background: 		#B0C4DE	;
+   /*#87CEEB;*/
+   height: 100%;
+   max-width: 100%;
+   overflow-x: hidden;
+ }
+
+#inputbox {
+    width: 80%;
+}
