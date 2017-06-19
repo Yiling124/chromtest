@@ -1,11 +1,68 @@
-var webListFromStorage = {}
-var totalHistory = 0;
+let planListFromStorage = {}
+let totalHistory = 0
 
-chrome.storage.sync.get(null, function (data) {
+let planList = {
+  'leetcode.com': 0,
+  'codewars.com': 0,
+  'cnn.com': 0,
+  'nytimes.com': 0,
+  'news.ycombinator.com': 0,
+  'stackoverflow.com': 0,
+  'mail.google.com': 0
+}
 
-  webListFromStorage = data
-  console.log('webListFromStorage', webListFromStorage)
+let playList = {
+  'facebook.com': 0,
+  'youtube.com': 0,
+  'pandora.com': 0,
+  'imdb.com': 0,
+  'macys.com': 0,
+  'bloomingdales.com': 0,
+  'twitter.com': 0,
+  'instagram.com': 0,
+  'etsy.com': 0,
+  'www.pinterest.com': 0
+}
+
+let customerPlayList = {
+  'businessinsider.com': 0
+}
+
+let customerPlanList = {
+    'pandora.com': 0
+}
+
+let objectToSyn = {
+  planList: planList,
+  playList: playList,
+  customerPlanList: customerPlanList,
+  customerPlayList: customerPlayList
+}
+
+chrome.storage.sync.set(objectToSyn, function () {
+  if (chrome.runtime.error) {
+    console.log('Runtime error.')
+  }
 })
+
+var allPlans
+var allPlays
+chrome.storage.sync.get(null, function (items) {
+  console.log('items', items)
+  if (!chrome.runtime.error) {
+    allPlans = Object.assign(items.customerPlanList, items.planList)
+    allPlays = Object.assign(items.customerPlayList, items.playList)
+  }
+})
+
+document.body.onload = function () {
+  chrome.storage.sync.get(null, function (items) {
+    if (!chrome.runtime.error) {
+      allPlans = Object.assign(items.customerPlanList, items.planList)
+      allPlays = Object.assign(items.customerPlayList, items.playList)
+    }
+  })
+}
 
 var clearTarget = function () {
   chrome.storage.sync.clear(function () {
@@ -23,20 +80,23 @@ document.addEventListener('DOMContentLoaded', function () {
   })
 })
 
-document.body.onload = function () {
-  chrome.storage.sync.get('data', function (items) {
-    if (!chrome.runtime.error) {
-      websiteList = items
-    }
-  })
-}
-
 var submitInput = function () {
   var websiteVal = document.getElementById('websitebox').value
-  var targetVal = document.getElementById('quantitybox').value
-  var newTargetObj = {}
-  newTargetObj[websiteVal] = targetVal * 7
-  chrome.storage.sync.set(newTargetObj, function () {
+  var typeVal = document.getElementById('typebox').value
+
+  if (typeVal === 'plan') {
+    if (objectFromStorage.customerPlanList === undefined) {
+      objectFromStorage.customerPlanList = {}
+    }
+    objectFromStorage.customerPlanList[websiteVal] = 0
+  } else if (typeVal === 'play') {
+    if (objectFromStorage.customerPlayList === undefined) {
+      objectFromStorage.customerPlayList = {}
+    }
+    objectFromStorage.customerPlayList[websiteVal] = 0
+  }
+
+  chrome.storage.sync.set(objectFromStorage, function () {
     if (chrome.runtime.error) {
       console.log('Runtime error.')
     }
@@ -62,66 +122,103 @@ function onAnchorClick(event) {
 
 // Given an array of URLs, build a DOM list of those URLs in the
 // browser action popup.
-function buildPopupDom(divName, data) {
-  var popupDiv = document.getElementById(divName)
 
-  //to be replace the previous code block
-  var ul = document.createElement('ul')
+
+function buildPopupDom(divName, data) {
+  var totalCount = data.allPlanClickCount + data.allPlayClickCount
+  var DomArr = []
+  var DomPlay = []
+  var plansToRank = data.planResult
+  var playsToRank = data.playResult
+  for (var key in plansToRank) {
+    if (DomArr[0] === undefined || plansToRank[key] >= plansToRank[DomArr[0]]) {
+      DomArr[2] = DomArr[1]
+      DomArr[1] = DomArr[0]
+      DomArr[0] = key
+    } else if (DomArr[1] === undefined || plansToRank[key] >= plansToRank[DomArr[1]]) {
+      DomArr[2] = DomArr[1]
+      DomArr[1] = key
+    } else if (DomArr[2] === undefined || plansToRank[key] >= plansToRank[DomArr[2]]) {
+      DomArr[2] = key
+    }
+  }
+
+  for (var key in playsToRank) {
+    if (DomPlay[0] === undefined || playsToRank[key] >= playsToRank[DomPlay[0]]) {
+      DomPlay[2] = DomPlay[1]
+      DomPlay[1] = DomPlay[0]
+      DomPlay[0] = key
+    } else if (DomPlay[1] === undefined || playsToRank[key] >= playsToRank[DomPlay[1]]) {
+      DomPlay[2] = DomPlay[1]
+      DomPlay[1] = key
+    } else if (DomPlay[2] === undefined || playsToRank[key] >= playsToRank[DomPlay[2]]) {
+      DomPlay[2] = key
+    }
+  }
+
+  var popupDiv = document.getElementById(divName)
   var h8 = document.createElement('h8')
-  var h8Text= document.createTextNode('Total VisitCount: ' + totalHistory)
+  if (data.allPlanClickCount >= data.allPlayClickCount) {
+    var h8Text = document.createTextNode("You did a great Job !")
+  } else if (data.allPlanClickCount < data.allPlayClickCount) {
+    var h8Text = document.createTextNode("You might need to work harder!")
+  }
   h8.appendChild(h8Text)
   popupDiv.appendChild(h8)
+
+  // if(data.allPlanClickCount >= data.allPlayClickCount){
+  //   h8.li.style.color = 'red'
+  // } else if(data.allPlanClickCount < data.allPlayClickCount){
+  //   h8.li.style.color = 'green'
+  // }
+  // var top5Plan = document.createElement('9')
+  // var top5PlanText = document.createTextNode("Top 5 Planned Websites: ")
+  // top5Plan.appendChild(top5PlanText)
+
+  // popupDiv.appendChild(top5Plan)
+
+  var ul = document.createElement('ul')
   popupDiv.appendChild(ul)
-  for (var key in data) {
+  var li = document.createElement('li')
+  var content = document.createTextNode('Top 3 for WORK: ')
+  li.appendChild(content)
+  li.style.color = 'blue'
+  ul.appendChild(li)
+  for (var i = 0; i <= DomArr.length - 1; i++) {
     var li = document.createElement('li')
-    var content = document.createTextNode(key + ' : ' + data[key]+ ' (target' + ' ' + webListFromStorage[key] + ')')
+    var content = document.createTextNode(DomArr[i] + " : " + (plansToRank[DomArr[i]] / totalCount).toFixed(2) * 100 + "%")
     li.appendChild(content)
-    var dataDecideColour = data[key]/webListFromStorage[key]
-    if (dataDecideColour <= 0.5){
-      li.style.color = 'red'
-    } else if (dataDecideColour <= 1){
-      li.style.color = 'blue'
-    } else if (dataDecideColour > 1){
-      li.style.color = 'green'
-    }
+    li.style.color = 'green'
+    ul.appendChild(li)
+  }
+  var li = document.createElement('li')
+  var content = document.createTextNode('Top 3 for PLAY: ')
+  li.appendChild(content)
+  li.style.color = 'blue'
+  ul.appendChild(li)
+  for (var i = 0; i <= DomArr.length - 1; i++) {
+    var li = document.createElement('li')
+    var content = document.createTextNode(DomPlay[i] + " : " + (playsToRank[DomPlay[i]] / totalCount).toFixed(2) * 100 + "%")
+    li.appendChild(content)
+    li.style.color = 'red'
     ul.appendChild(li)
   }
 }
 
-// Search history to find up to ten links that a user has typed in,
-// and show those links in a popup.
 function buildUrlList(divName) {
-  // To look for history items visited in the last week,
-  // subtract a week of microseconds from the current time.
-  // var microsecondsPerDay = 1000 * 60 * 60 * 24;
-  // var oneWeekAgo = (new Date).getTime() - microsecondsPerDay * 5;
-
-  //search for History starting from every SUNDAY midnight
   var microsecondsPerWeek = 1000 * 60 * 60 * 24 * 7;
   var startTime = (new Date).getTime() - microsecondsPerWeek;
-  console.log('startTime', startTime)
-
-
-  // let standardTime = new Date()
-  // standardTime.setHours(0, 0, 1)
-
-  // let startTime = standardTime
-  // startTime.setDate(standardTime.getDate() - ((new Date()).getDay() - 1));
-  // let StartTimeUnix = Math.round(startTime.getTime() / 1000)
-  // console.log('starTIME',startTime)
-  // Track the number of callbacks from chrome.history.getVisits()
-  // that we expect to get.  When it reaches zero, we have all results.
 
   let urlToCount = {}
-  let returnResult = {}
+  let planResult = {}
+  let playResult = {}
 
   chrome.history.search({
-      text: '', // Return every history item....
+      text: '',
       startTime: startTime,
       maxResults: 10000000
     },
     function (historyItems) {
-      console.log('historyItems', historyItems)
       // For each history item, get details on all visits.
       for (var i = 0; i < historyItems.length; ++i) {
         var url = historyItems[i].url;
@@ -135,17 +232,38 @@ function buildUrlList(divName) {
     }
   )
 
+  var allPlanClickCount = 0;
+  var allPlayClickCount = 0;
+
   function onAllVisitsProcessed() {
-    for (var key in webListFromStorage) {
+    for (var key in allPlans) {
       let visitCount = 0
       for (var url in urlToCount) {
         if (url.includes(key)) {
           visitCount += urlToCount[url]
+          allPlanClickCount += urlToCount[url]
         }
       }
-      returnResult[key] = visitCount
+      planResult[key] = visitCount
     }
-    buildPopupDom(divName, returnResult)
+
+    for (var key in allPlays) {
+      let visitCount = 0
+      for (var url in urlToCount) {
+        if (url.includes(key)) {
+          visitCount += urlToCount[url]
+          allPlayClickCount += urlToCount[url]
+        }
+      }
+      playResult[key] = visitCount
+    }
+    let objectForDom = {
+      playResult: playResult,
+      planResult: planResult,
+      allPlanClickCount: allPlanClickCount,
+      allPlayClickCount: allPlayClickCount
+    }
+    buildPopupDom(divName, objectForDom)
   }
 }
 
