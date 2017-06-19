@@ -6,15 +6,11 @@ let planList = {
   'codewars.com': 0,
   'cnn.com': 0,
   'nytimes.com': 0,
-  'news.ycombinator.com': 0,
-  'stackoverflow.com': 0,
-  'mail.google.com': 0
+  'news.ycombinator.com': 0
 }
 
 let playList = {
   'facebook.com': 0,
-  'youtube.com': 0,
-  'pandora.com': 0,
   'imdb.com': 0,
   'macys.com': 0,
   'bloomingdales.com': 0,
@@ -24,19 +20,17 @@ let playList = {
   'www.pinterest.com': 0
 }
 
-let customerPlayList = {
-  'businessinsider.com': 0
-}
+// let customerPlayList = {
+// }
 
-let customerPlanList = {
-    'pandora.com': 0
-}
+// let customerPlanList = {
+// }
 
 let objectToSyn = {
   planList: planList,
-  playList: playList,
-  customerPlanList: customerPlanList,
-  customerPlayList: customerPlayList
+  playList: playList
+  // customerPlanList: customerPlanList,
+  // customerPlayList: customerPlayList
 }
 
 chrome.storage.sync.set(objectToSyn, function () {
@@ -47,22 +41,24 @@ chrome.storage.sync.set(objectToSyn, function () {
 
 var allPlans
 var allPlays
+var objectFromStorage
 chrome.storage.sync.get(null, function (items) {
   console.log('items', items)
   if (!chrome.runtime.error) {
-    allPlans = Object.assign(items.customerPlanList, items.planList)
-    allPlays = Object.assign(items.customerPlayList, items.playList)
+    objectFromStorage = items
+    allPlans = Object.assign({}, items.customerPlanList, items.planList)
+    allPlays = Object.assign({}, items.customerPlayList, items.playList)
   }
 })
 
-document.body.onload = function () {
-  chrome.storage.sync.get(null, function (items) {
-    if (!chrome.runtime.error) {
-      allPlans = Object.assign(items.customerPlanList, items.planList)
-      allPlays = Object.assign(items.customerPlayList, items.playList)
-    }
-  })
-}
+// document.body.onload = function () {
+//   chrome.storage.sync.get(null, function (items) {
+//     if (!chrome.runtime.error) {
+//       allPlans = Object.assign({}, items.customerPlanList, items.planList)
+//       allPlays = Object.assign({}, items.customerPlayList, items.playList)
+//     }
+//   })
+// }
 
 var clearTarget = function () {
   chrome.storage.sync.clear(function () {
@@ -186,7 +182,8 @@ function buildPopupDom(divName, data) {
   ul.appendChild(li)
   for (var i = 0; i <= DomArr.length - 1; i++) {
     var li = document.createElement('li')
-    var content = document.createTextNode(DomArr[i] + " : " + (plansToRank[DomArr[i]] / totalCount).toFixed(2) * 100 + "%")
+    var temp = (plansToRank[DomArr[i]] / totalCount * 100).toFixed(2)
+    var content = document.createTextNode(DomArr[i] + " : " + temp + "%")
     li.appendChild(content)
     li.style.color = 'green'
     ul.appendChild(li)
@@ -198,7 +195,8 @@ function buildPopupDom(divName, data) {
   ul.appendChild(li)
   for (var i = 0; i <= DomArr.length - 1; i++) {
     var li = document.createElement('li')
-    var content = document.createTextNode(DomPlay[i] + " : " + (playsToRank[DomPlay[i]] / totalCount).toFixed(2) * 100 + "%")
+    var temp2 = (playsToRank[DomPlay[i]] / totalCount*100).toFixed(2)
+    var content = document.createTextNode(DomPlay[i] + " : " + temp2 + "%")
     li.appendChild(content)
     li.style.color = 'red'
     ul.appendChild(li)
